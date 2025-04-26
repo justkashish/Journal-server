@@ -1,34 +1,38 @@
-const express = require("express")
-const router = express.Router()
-const journalController = require("../controllers/journalController")
-const auth = require("../middleware/auth")
+import express from 'express';
+import {
+    createEntry,
+    getEntries,
+    getEntry,
+    updateEntry,
+    deleteEntry
+} from '../controllers/journalController.js';
+import auth from '../middleware/auth.js';
 
-// Apply auth middleware to all routes
-router.use(auth)
+const router = express.Router();
 
 // @route   POST api/journal
 // @desc    Create a journal entry
 // @access  Private
-router.post("/", journalController.createEntry)
+router.post('/', auth, createEntry);
 
 // @route   GET api/journal
 // @desc    Get all journal entries
 // @access  Private
-router.get("/", journalController.getEntries)
+router.get('/', auth, getEntries);
 
 // @route   GET api/journal/:id
 // @desc    Get a journal entry by ID
 // @access  Private
-router.get("/:id", journalController.getEntry)
+router.get('/:id', auth, getEntry);
 
 // @route   PUT api/journal/:id
 // @desc    Update a journal entry
 // @access  Private
-router.put("/:id", journalController.updateEntry)
+router.put('/:id', auth, updateEntry);
 
 // @route   DELETE api/journal/:id
 // @desc    Delete a journal entry
 // @access  Private
-router.delete("/:id", journalController.deleteEntry)
+router.delete('/:id', auth, deleteEntry);
 
-module.exports = router
+export default router;

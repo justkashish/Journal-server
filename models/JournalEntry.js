@@ -1,28 +1,30 @@
-const mongoose = require("mongoose")
+import mongoose from 'mongoose';
 
-const JournalEntrySchema = new mongoose.Schema({
+const journalEntrySchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
+        ref: 'User',
+        required: true
     },
     content: {
         type: String,
-        required: true,
+        required: true
     },
     date: {
         type: Date,
-        default: Date.now,
+        default: Date.now
     },
     detectedEmotion: {
         type: String,
-        enum: ["happy", "sad", "angry", "neutral", "anxious", "excited", "grateful"],
-        default: "neutral",
+        enum: ['happy', 'sad', 'angry', 'neutral', 'anxious', 'excited', 'grateful'],
+        default: 'neutral'
     },
     emotionTag: {
         type: String,
-        enum: ["happy", "sad", "angry", "neutral", "anxious", "excited", "grateful"],
-    },
-})
+        enum: ['happy', 'sad', 'angry', 'neutral', 'anxious', 'excited', 'grateful'],
+    }
+});
 
-module.exports = mongoose.model("JournalEntry", JournalEntrySchema)
+const JournalEntry = mongoose.model('JournalEntry', journalEntrySchema);
+
+export default JournalEntry;

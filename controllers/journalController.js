@@ -1,13 +1,13 @@
-const JournalEntry = require("../models/JournalEntry")
-const { analyzeEmotion } = require("../utils/sentimentAnalyzer")
+import JournalEntry from '../models/JournalEntry.js';
+import analyzeEmotion from '../utils/sentimentAnalyzer.js';
 
 // Create a new journal entry
-exports.createEntry = async(req, res) => {
-    try {
-        const { content, date, emotionTag } = req.body
+export const createEntry = async(req, res) => {
+    const { content, date, emotionTag } = req.body;
 
+    try {
         // Analyze emotion from content
-        const detectedEmotion = analyzeEmotion(content)
+        const detectedEmotion = analyzeEmotion(content);
 
         // Create new journal entry
         const newEntry = new JournalEntry({
@@ -15,104 +15,118 @@ exports.createEntry = async(req, res) => {
             content,
             date: date || Date.now(),
             detectedEmotion,
-            emotionTag,
-        })
+            emotionTag
+        });
 
-        const savedEntry = await newEntry.save()
-        res.status(201).json(savedEntry)
+        // Save entry to database
+        const entry = await newEntry.save();
+        res.json(entry);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
-}
+};
 
 // Get all journal entries for a user
-exports.getEntries = async(req, res) => {
+export const getEntries = async(req, res) => {
     try {
-        const entries = await JournalEntry.find({ userId: req.user.id }).sort({ date: -1 })
-        res.json(entries)
+        const entries = await JournalEntry.find({ userId: req.user.id })
+            .sort({ date: -1 });
+        res.json(entries);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
-}
+};
 
 // Get a single journal entry
-exports.getEntry = async(req, res) => {
+export const getEntry = async(req, res) => {
     try {
-        const entry = await JournalEntry.findById(req.params.id)
+        const entry = await JournalEntry.findById(req.params.id);
 
         // Check if entry exists
         if (!entry) {
-            return res.status(404).json({ message: "Entry not found" })
+            return res.status(404).json({ msg: 'Entry not found' });
         }
 
-        // Check if entry belongs to user
+        // Check if user owns the entry
         if (entry.userId.toString() !== req.user.id) {
-            return res.status(401).json({ message: "Not authorized" })
+            return res.status(401).json({ msg: 'Not authorized' });
         }
 
-        res.json(entry)
+        res.json(entry);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Entry not found' });
+        }
+        res.status(500).send('Server error');
     }
-}
+};
 
 // Update a journal entry
-exports.updateEntry = async(req, res) => {
-    try {
-        const { content, date, emotionTag } = req.body
+export const updateEntry = async(req, res) => {
+    const { content, date, emotionTag } = req.body;
 
-        // Find the entry
-        const entry = await JournalEntry.findById(req.params.id)
+    try {
+        let entry = await JournalEntry.findById(req.params.id);
 
         // Check if entry exists
         if (!entry) {
-            return res.status(404).json({ message: "Entry not found" })
+            return res.status(404).json({ msg: 'Entry not found' });
         }
 
-        // Check if entry belongs to user
+        // Check if user owns the entry
         if (entry.userId.toString() !== req.user.id) {
-            return res.status(401).json({ message: "Not authorized" })
+            return res.status(401).json({ msg: 'Not authorized' });
         }
 
-        // Update fields
-        if (content) {
-            entry.content = content
-            entry.detectedEmotion = analyzeEmotion(content)
-        }
+        // Analyze emotion if content is updated
+        const detectedEmotion = content ? analyzeEmotion(content) : entry.detectedEmotion;
 
-        if (date) entry.date = date
-        if (emotionTag) entry.emotionTag = emotionTag
+        // Update entry
+        entry = await JournalEntry.findByIdAndUpdate(
+            req.params.id, {
+                content: content || entry.content,
+                date: date || entry.date,
+                detectedEmotion,
+                emotionTag: emotionTag || entry.emotionTag
+            }, { new: true }
+        );
 
-        await entry.save()
-        res.json(entry)
+        res.json(entry);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Entry not found' });
+        }
+        res.status(500).send('Server error');
     }
-}
+};
 
 // Delete a journal entry
-exports.deleteEntry = async(req, res) => {
+export const deleteEntry = async(req, res) => {
     try {
-        const entry = await JournalEntry.findById(req.params.id)
+        const entry = await JournalEntry.findById(req.params.id);
 
         // Check if entry exists
         if (!entry) {
-            return res.status(404).json({ message: "Entry not found" })
+            return res.status(404).json({ msg: 'Entry not found' });
         }
 
-        // Check if entry belongs to user
+        // Check if user owns the entry
         if (entry.userId.toString() !== req.user.id) {
-            return res.status(401).json({ message: "Not authorized" })
+            return res.status(401).json({ msg: 'Not authorized' });
         }
 
-        await entry.remove()
-        res.json({ message: "Entry removed" })
+        // Delete entry
+        await JournalEntry.deleteOne({ _id: req.params.id });
+        res.json({ msg: 'Entry removed' });
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Entry not found' });
+        }
+        res.status(500).send('Server error');
     }
-}
+};

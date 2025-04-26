@@ -1,91 +1,103 @@
-const JournalEntry = require("../models/JournalEntry")
-const moment = require("moment")
+import JournalEntry from '../models/JournalEntry.js';
+import mongoose from 'mongoose';
 
-// Get emotion counts
-exports.getEmotionCounts = async(req, res) => {
+// Get emotion counts for a user
+export const getEmotionCounts = async(req, res) => {
     try {
         const emotionCounts = await JournalEntry.aggregate([
-            { $match: { userId: req.user.id } },
-            { $group: { _id: "$detectedEmotion", count: { $sum: 1 } } },
-        ])
+            { $match: { userId: new mongoose.Types.ObjectId(req.user.id) } },
+            { $group: { _id: '$detectedEmotion', count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+        ]);
 
-        // Format the response
-        const formattedCounts = emotionCounts.reduce((acc, item) => {
-            acc[item._id] = item.count
-            return acc
-        }, {})
-
-        res.json(formattedCounts)
+        res.json(emotionCounts);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
-}
+};
 
 // Get weekly emotion breakdown
-exports.getWeeklyEmotions = async(req, res) => {
+export const getWeeklyEmotions = async(req, res) => {
     try {
-        // Get entries from the past 7 days
-        const sevenDaysAgo = moment().subtract(7, "days").toDate()
+        // Get date 7 days ago
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const entries = await JournalEntry.find({
-            userId: req.user.id,
-            date: { $gte: sevenDaysAgo },
-        }).sort({ date: 1 })
-
-        // Group by day and emotion
-        const dailyEmotions = {}
-
-        entries.forEach((entry) => {
-            const day = moment(entry.date).format("YYYY-MM-DD")
-
-            if (!dailyEmotions[day]) {
-                dailyEmotions[day] = {}
+        const weeklyEmotions = await JournalEntry.aggregate([{
+                $match: {
+                    userId: new mongoose.Types.ObjectId(req.user.id),
+                    date: { $gte: sevenDaysAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        day: { $dayOfMonth: '$date' },
+                        month: { $month: '$date' },
+                        year: { $year: '$date' },
+                        emotion: '$detectedEmotion'
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 }
             }
+        ]);
 
-            const emotion = entry.detectedEmotion
-            dailyEmotions[day][emotion] = (dailyEmotions[day][emotion] || 0) + 1
-        })
+        // Format the data for frontend
+        const formattedData = weeklyEmotions.map(item => ({
+            date: `${item._id.year}-${item._id.month}-${item._id.day}`,
+            emotion: item._id.emotion,
+            count: item.count
+        }));
 
-        res.json(dailyEmotions)
+        res.json(formattedData);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
-}
+};
 
 // Get monthly emotion breakdown
-exports.getMonthlyEmotions = async(req, res) => {
+export const getMonthlyEmotions = async(req, res) => {
     try {
-        const { month, year } = req.query
+        // Get first day of current month
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
 
-        // Default to current month and year if not provided
-        const targetMonth = month ? Number.parseInt(month) - 1 : moment().month() // 0-indexed
-        const targetYear = year ? Number.parseInt(year) : moment().year()
+        const monthlyEmotions = await JournalEntry.aggregate([{
+                $match: {
+                    userId: new mongoose.Types.ObjectId(req.user.id),
+                    date: { $gte: startOfMonth }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        day: { $dayOfMonth: '$date' },
+                        emotion: '$detectedEmotion'
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { '_id.day': 1 }
+            }
+        ]);
 
-        const startDate = moment().year(targetYear).month(targetMonth).startOf("month").toDate()
-        const endDate = moment().year(targetYear).month(targetMonth).endOf("month").toDate()
+        // Format the data for frontend
+        const formattedData = monthlyEmotions.map(item => ({
+            day: item._id.day,
+            emotion: item._id.emotion,
+            count: item.count
+        }));
 
-        const entries = await JournalEntry.find({
-            userId: req.user.id,
-            date: { $gte: startDate, $lte: endDate },
-        })
-
-        // Group by emotion
-        const emotionCounts = {}
-
-        entries.forEach((entry) => {
-            const emotion = entry.detectedEmotion
-            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1
-        })
-
-        res.json({
-            month: targetMonth + 1,
-            year: targetYear,
-            emotions: emotionCounts,
-        })
+        res.json(formattedData);
     } catch (err) {
-        console.error(err.message)
-        res.status(500).send("Server error")
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
-}
+};

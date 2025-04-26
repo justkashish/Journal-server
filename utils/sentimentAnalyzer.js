@@ -1,106 +1,50 @@
-  // Simple keyword-based sentiment analyzer
+// Simple keyword-based sentiment analyzer
 
-  // Emotion keywords mapping
-  const emotionKeywords = {
-      happy: [
-          "happy",
-          "joy",
-          "excited",
-          "great",
-          "wonderful",
-          "amazing",
-          "good",
-          "positive",
-          "love",
-          "smile",
-          "laugh",
-          "delighted",
-          "pleased",
-      ],
-      sad: [
-          "sad",
-          "unhappy",
-          "depressed",
-          "down",
-          "miserable",
-          "upset",
-          "disappointed",
-          "sorrow",
-          "grief",
-          "cry",
-          "tears",
-          "heartbroken",
-      ],
-      angry: [
-          "angry",
-          "mad",
-          "furious",
-          "annoyed",
-          "irritated",
-          "frustrated",
-          "rage",
-          "hate",
-          "upset",
-          "outraged",
-          "hostile",
-      ],
-      anxious: [
-          "anxious",
-          "worried",
-          "nervous",
-          "stressed",
-          "tense",
-          "uneasy",
-          "afraid",
-          "scared",
-          "fear",
-          "panic",
-          "dread",
-      ],
-      excited: ["excited", "thrilled", "eager", "enthusiastic", "energetic", "pumped", "psyched", "stoked", "anticipation"],
-      grateful: ["grateful", "thankful", "blessed", "appreciate", "gratitude", "content", "satisfied", "fulfilled"],
-  }
+// Define emotion keywords
+const emotionKeywords = {
+    happy: ['happy', 'joy', 'delighted', 'excited', 'glad', 'pleased', 'thrilled', 'wonderful', 'smile', 'laugh', 'great', 'amazing', 'awesome', 'fantastic', 'excellent', 'love', 'enjoy', 'fun'],
+    sad: ['sad', 'unhappy', 'depressed', 'down', 'miserable', 'gloomy', 'heartbroken', 'disappointed', 'upset', 'cry', 'tears', 'grief', 'sorrow', 'regret', 'miss', 'lonely', 'alone'],
+    angry: ['angry', 'mad', 'furious', 'rage', 'annoyed', 'irritated', 'frustrated', 'hate', 'dislike', 'resent', 'bitter', 'outraged', 'hostile', 'enraged', 'disgusted', 'upset'],
+    anxious: ['anxious', 'worried', 'nervous', 'stress', 'stressed', 'tense', 'uneasy', 'afraid', 'scared', 'fear', 'panic', 'dread', 'concern', 'apprehensive', 'overwhelmed'],
+    excited: ['excited', 'thrilled', 'eager', 'enthusiastic', 'looking forward', 'anticipate', 'pumped', 'psyched', 'stoked', 'energetic', 'motivated', 'inspired', 'passionate'],
+    grateful: ['grateful', 'thankful', 'appreciate', 'blessed', 'fortunate', 'lucky', 'content', 'satisfied', 'fulfilled', 'humble', 'honored']
+};
 
-  function analyzeEmotion(text) {
-      // Convert to lowercase for case-insensitive matching
-      const lowercaseText = text.toLowerCase()
+// Analyze text and return detected emotion
+const analyzeEmotion = (text) => {
+    // Convert text to lowercase for case-insensitive matching
+    const lowercaseText = text.toLowerCase();
 
-      // Count occurrences of emotion keywords
-      const emotionCounts = {
-          happy: 0,
-          sad: 0,
-          angry: 0,
-          anxious: 0,
-          excited: 0,
-          grateful: 0,
-          neutral: 0,
-      }
+    // Count occurrences of emotion keywords
+    const emotionCounts = {};
 
-      // Check for each emotion's keywords
-      for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
-          for (const keyword of keywords) {
-              // Use word boundary to match whole words
-              const regex = new RegExp(`\\b${keyword}\\b`, "gi")
-              const matches = lowercaseText.match(regex)
-              if (matches) {
-                  emotionCounts[emotion] += matches.length
-              }
-          }
-      }
+    for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+        emotionCounts[emotion] = 0;
 
-      // Find the dominant emotion
-      let dominantEmotion = "neutral"
-      let maxCount = 0
+        for (const keyword of keywords) {
+            // Count occurrences of each keyword
+            const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+            const matches = lowercaseText.match(regex);
 
-      for (const [emotion, count] of Object.entries(emotionCounts)) {
-          if (count > maxCount) {
-              maxCount = count
-              dominantEmotion = emotion
-          }
-      }
+            if (matches) {
+                emotionCounts[emotion] += matches.length;
+            }
+        }
+    }
 
-      // If no emotions were detected, return neutral
-      return maxCount > 0 ? dominantEmotion : "neutral"
-  }
+    // Find the emotion with the highest count
+    let dominantEmotion = 'neutral';
+    let maxCount = 0;
 
-  module.exports = { analyzeEmotion }
+    for (const [emotion, count] of Object.entries(emotionCounts)) {
+        if (count > maxCount) {
+            maxCount = count;
+            dominantEmotion = emotion;
+        }
+    }
+
+    // If no emotion keywords are found, return neutral
+    return maxCount > 0 ? dominantEmotion : 'neutral';
+};
+
+export default analyzeEmotion;

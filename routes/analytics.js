@@ -1,24 +1,26 @@
-const express = require("express")
-const router = express.Router()
-const analyticsController = require("../controllers/analyticsController")
-const auth = require("../middleware/auth")
+import express from 'express';
+import {
+    getEmotionCounts,
+    getWeeklyEmotions,
+    getMonthlyEmotions
+} from '../controllers/analyticsController.js';
+import auth from '../middleware/auth.js';
 
-// Apply auth middleware to all routes
-router.use(auth)
+const router = express.Router();
 
 // @route   GET api/analytics/emotions
 // @desc    Get emotion counts
 // @access  Private
-router.get("/emotions", analyticsController.getEmotionCounts)
+router.get('/emotions', auth, getEmotionCounts);
 
 // @route   GET api/analytics/weekly
 // @desc    Get weekly emotion breakdown
 // @access  Private
-router.get("/weekly", analyticsController.getWeeklyEmotions)
+router.get('/weekly', auth, getWeeklyEmotions);
 
 // @route   GET api/analytics/monthly
 // @desc    Get monthly emotion breakdown
 // @access  Private
-router.get("/monthly", analyticsController.getMonthlyEmotions)
+router.get('/monthly', auth, getMonthlyEmotions);
 
-module.exports = router
+export default router;
