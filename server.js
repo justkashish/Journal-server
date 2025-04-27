@@ -14,7 +14,10 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: "https://my-journal-plum-ten.vercel.app", // your frontend URL
+    credentials: true
+}));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
